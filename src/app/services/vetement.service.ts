@@ -1,17 +1,28 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { Vetement } from '../model/vetement.model';
 import { Tyype } from '../model/type.model';
+import { TypeWrapper } from '../model/typeWrapper.model';
+import { VetementWrapper } from '../model/vetementWrapper.model';
 
+const httpOptions = {
+  headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class VetementService {
+  apiURL: string = 'http://localhost:8081/vetements/rest';
+  apiURLApi: string = 'http://localhost:8081/vetements/api';
+  apiURLType: string = 'http://localhost:8081/vetements/types';
+
   vetements : Vetement[]; //un tableau de Vetement
   vetement! : Vetement;
   types!: Tyype[];
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.types = [
       { idType: 1, nomType: "T-shirt" },
       { idType: 2, nomType: "Pantalon" },
@@ -20,71 +31,58 @@ export class VetementService {
 
     this.vetements = [
       { idVetement : 1,  nomVetement : "T-shirt Nike", prixVetement : 80,  taille : "M",  couleur : "Noir",  dateCreation : new Date("01/14/2024"),type: { idType: 1, nomType: "T-shirt" }},
-{ idVetement : 2,  nomVetement : "Jean Adidas",  prixVetement : 150, taille : "L",  couleur : "Bleu",  dateCreation : new Date("12/17/2023"),type: { idType: 2, nomType: "Pantalon" }},
-{ idVetement : 3,  nomVetement : "Veste Zara",   prixVetement : 220, taille : "XL", couleur : "Rouge", dateCreation : new Date("02/20/2024"),type: { idType: 3, nomType: "Veste" }}
+      { idVetement : 2,  nomVetement : "Jean Adidas",  prixVetement : 150, taille : "L",  couleur : "Bleu",  dateCreation : new Date("12/17/2023"),type: { idType: 2, nomType: "Pantalon" }},
+      { idVetement : 3,  nomVetement : "Veste Zara",   prixVetement : 220, taille : "XL", couleur : "Rouge", dateCreation : new Date("02/20/2024"),type: { idType: 3, nomType: "Veste" }}
     ];
-   }
-
-    listeVetements():Vetement[] {
-      return this.vetements;
-    }
-
-    ajouterVetement( prod: Vetement){
-      this.vetements.push(prod);
-    }
-  supprimerVetement(prod: Vetement) {
-    //supprimer le vetement prod du tableau vetements
-    const index = this.vetements.indexOf(prod, 0);
-    if (index > -1) {
-      this.vetements.splice(index, 1);
-    }
-    //ou Bien
-    /* this.vetements.forEach((cur, index) => {
-    if(prod.idVetement === cur.idVetement) {
-    this.vetements.splice(index, 1);
-    }
-    }); */
   }
-  consulterVetement(id:number): Vetement{
-    return this.vetement = this.vetements.find(p => p.idVetement == id)!;
-        
-    }
 
-  updateVetement(prod: Vetement) {
-    //chercher le vetement prod du tableau vetements
-    const index = this.vetements.indexOf(prod, 0);
-    if (index > -1) {
-      this.vetements.splice(index, 1); //supprimer l'ancien éléments
-      this.vetements.splice(index, 0, prod); // insérer le nouvel élément
+  // La liste des vetements vient de l'API Spring Data REST
+  listeVetements(): Observable<VetementWrapper> {
+    return this.http.get<VetementWrapper>(this.apiURL + '?projection=vetementsType');
+  }
 
-    }
-}
-    listeTypes(): Tyype[] { return this.types; }
-     consulterType(id: number): Tyype {
+  // POST : ajouter un vetement dans la base
+  ajouterVetement(v: Vetement): Observable<Vetement> {
+    return this.http.post<Vetement>(this.apiURLApi, v, httpOptions);
+  }
+
+  // DELETE : supprimer un vetement de la base
+  supprimerVetement(id: number) {
+    return this.http.delete(this.apiURLApi + '/' + id);
+  }
+
+  // Un vetement par son id (API)
+  consulterVetement(id: number): Observable<Vetement> {
+    return this.http.get<Vetement>(this.apiURL + '/' + id + '?projection=vetementsType');
+  }
+
+  // PUT : modifier un vetement dans la base
+  updateVetement(v: Vetement): Observable<Vetement> {
+    return this.http.put<Vetement>(this.apiURLApi, v, httpOptions);
+  }
+
+  // La liste des types vient de l'API Spring Data REST
+  listeTypes(): Observable<TypeWrapper> {
+    return this.http.get<TypeWrapper>(this.apiURLType);
+  }
+
+  consulterType(id: number): Tyype {
     return this.types.find(t => t.idType == id)!;
   }
-  
- 
 
-  rechercherParType(idType: number): Vetement[] {
+  // Les vetements d'un type (API)
+  rechercherParType(idType: number): Observable<VetementWrapper> {
+    return this.http.get<VetementWrapper>(
+      this.apiURL + '/search/findByTypeIdType?id=' + idType + '&projection=vetementsType');
+  }
 
-    return this.vetements.filter(
-      v => v.type.idType == idType
-    );
+  // POST : ajouter un type dans la base
+  ajouterType(t: Tyype): Observable<Tyype> {
+    return this.http.post<Tyype>(this.apiURLType, { nomType: t.nomType }, httpOptions);
   }
-    ajouterType(t: Tyype) {
-    t.idType = this.types.length ? Math.max(...this.types.map(x => x.idType)) + 1 : 1;
-    this.types.push(t);
-  }
-    updateType(t: Tyype) {
-    const index = this.types.findIndex(x => x.idType == t.idType);
-    if (index > -1) {
-      this.types[index] = t;
-      // mettre à jour el type fil vetements elli yestaamlouh
-      this.vetements.forEach(v => {
-        if (v.type.idType == t.idType) v.type = { ...t };
-      });
-    }
+
+  // PUT : modifier un type dans la base
+  updateType(t: Tyype): Observable<Tyype> {
+    return this.http.put<Tyype>(this.apiURLType + '/' + t.idType, { nomType: t.nomType }, httpOptions);
   }
 }
-  

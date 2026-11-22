@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Vetement } from '../model/vetement.model';
 import { VetementService } from '../services/vetement.service';
@@ -10,30 +10,32 @@ import { Tyype } from '../model/type.model';
   standalone: true,
   imports: [FormsModule],
   templateUrl: './add-vetement.html',
-  
 })
-export class AddVetementComponent {
+export class AddVetementComponent implements OnInit {
 
   newVetement: Vetement = new Vetement();
   types!: Tyype[];
   newIdType!: number;
   newType!: Tyype;
-  message! : string;
+  message!: string;
 
-  constructor(private vetementService: VetementService,private router :Router,) {}
+  constructor(private vetementService: VetementService,
+              private router: Router,
+              private cdr: ChangeDetectorRef) {}
 
+  ngOnInit(): void {
+    this.vetementService.listeTypes().subscribe(types => {
+      console.log(types);
+      this.types = types._embedded.types;
+      this.cdr.markForCheck();
+    });
+  }
 
-   ngOnInit() {
-     this.types = this.vetementService.listeTypes();
-   }
-
-   addVetement() {
-     this.newType = this.vetementService.consulterType(this.newIdType);
-     this.newVetement.type = this.newType;
-     this.vetementService.ajouterVetement(this.newVetement);
-     this.router.navigate(['vetements']);
-   }
-
+  addVetement() {
+    this.newType = this.types.find(t => t.idType == this.newIdType)!;
+    this.newVetement.type = this.newType;
+    this.vetementService.ajouterVetement(this.newVetement).subscribe(() => {
+      this.router.navigate(['vetements']);
+    });
+  }
 }
-
-

@@ -13,22 +13,32 @@ import { VetementService } from '../services/vetement.service';
 })
 export class RechercheParType implements OnInit {
 
-  vetements!: Vetement[];
+  vetements: Vetement[] = [];
   types!: Tyype[];
   idType!: number;
 
   constructor(private vetementService: VetementService) {}
 
   ngOnInit(): void {
-    this.types = this.vetementService.listeTypes();
-    this.vetements = this.vetementService.listeVetements();
+    this.vetementService.listeTypes().subscribe(types => {
+      this.types = types._embedded.types;
+    });
+    this.chargerVetements();
   }
-  
+
+  chargerVetements(): void {
+    this.vetementService.listeVetements().subscribe(vets => {
+      this.vetements = vets._embedded.vetements;
+    });
+  }
+
   onChange(): void {
     if (this.idType) {
-      this.vetements = this.vetementService.rechercherParType(this.idType);
+      this.vetementService.rechercherParType(this.idType).subscribe(vets => {
+        this.vetements = vets._embedded.vetements;
+      });
     } else {
-      this.vetements = this.vetementService.listeVetements();
+      this.chargerVetements();
     }
   }
 }

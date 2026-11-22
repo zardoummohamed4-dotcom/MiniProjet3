@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Tyype } from '../model/type.model';
 import { VetementService } from '../services/vetement.service';
-import { Vetement } from '../model/vetement.model';
 import { UpdateType } from '../update-type/update-type';
 
 @Component({
@@ -18,30 +17,37 @@ export class ListeTypes implements OnInit {
 
   updatedType: Tyype = { idType: 0, nomType: "" };
 
-  constructor(private vetementService: VetementService) { }
+  constructor(private vetementService: VetementService,
+              private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.chargerTypes();
   }
+
   chargerTypes() {
-    this.types = this.vetementService.listeTypes();
+    this.vetementService.listeTypes().subscribe(types => {
+      this.types = types._embedded.types;
+      this.cdr.markForCheck();
+    });
   }
 
   typeUpdated(t: Tyype) {
     console.log("Type updated event", t);
     if (this.ajout) {
-      this.vetementService.ajouterType({ ...t });
+      this.vetementService.ajouterType({ ...t }).subscribe(() => {
+        this.chargerTypes();
+      });
     } else {
-      this.vetementService.updateType({ ...t });
+      this.vetementService.updateType({ ...t }).subscribe(() => {
+        this.chargerTypes();
+      });
     }
-    this.chargerTypes();
     this.updatedType = { idType: 0, nomType: "" };
     this.ajout = true;
   }
-  
-    updateType(t: Tyype) {
+
+  updateType(t: Tyype) {
     this.updatedType = { ...t };
     this.ajout = false;
   }
 }
-

@@ -28,7 +28,9 @@ export class RechercheParNom implements OnInit {
 
   ngOnInit(): void {
 
-    this.vetements = this.vetementService.listeVetements();
+    this.vetementService.listeVetements().subscribe(vets => {
+      this.vetements = vets._embedded.vetements;
+    });
 
   }
 

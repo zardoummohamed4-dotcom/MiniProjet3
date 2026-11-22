@@ -27,7 +27,7 @@
                         <td>{{vetement.taille}}</td>
                         <td>{{vetement.couleur}}</td>
                         <td>{{vetement.dateCreation | date:'dd/MM/yyyy'}}</td>
-                        <td>{{vetement.type.nomType}}</td>
+                        <td>{{vetement.type?.nomType}}</td>
 
                         @if(authService.isAdmin()) {
 
